@@ -1,0 +1,201 @@
+from pygame import *
+from random import randint
+window = display.set_mode((900,500))
+display.set_caption('пинг-понг')
+background67 = transform.scale(image.load('background.jpg'),(700,500))
+futureback = transform.scale(image.load('futureback.jpg'),(700,500))
+jungleback = transform.scale(image.load('jungleback.jpg'),(700,500))
+scaryback = transform.scale(image.load('scaryback.jpg'),(700,500))
+
+paused = False
+clock = time.Clock()
+font.init()
+font1 = font.SysFont('Arial',36)
+font2 = font.SysFont('Arial',60)
+speed_h = 5
+speed_w = 5
+
+fill_height = 0
+fill_height2 = 0
+can_collide = True
+can_collide2 = True
+
+game_mode = 'Z' 
+base_speed_r1 = 10
+base_speed_r2 = 10
+
+ult_timer1 = 0
+ult_timer2 = 0
+
+class GameSprite(sprite.Sprite):
+    def __init__(self,player_image,player_x,player_y,player_speed,h,w):
+        super().__init__()
+        self.image = transform.scale(image.load(player_image),(h,w))
+        self.speed = player_speed
+        self.rect = self.image.get_rect()
+        self.rect.x = player_x
+        self.rect.y = player_y
+    def reset(self):
+        window.blit(self.image,(self.rect.x, self.rect.y))
+class Player(GameSprite):
+    def update_l(self):
+        keys = key.get_pressed()
+        if keys[K_UP]and self.rect.y>0:
+            self.rect.y -= self.speed
+        if keys[K_DOWN]and self.rect.y<430:
+            self.rect.y += self.speed
+    def update_r(self):
+        keys = key.get_pressed()
+        if keys[K_w]and self.rect.y>0:
+            self.rect.y -= self.speed
+        if keys[K_s]and self.rect.y<430:
+            self.rect.y += self.speed
+
+rock1 = Player('rocket.jpg', 150,200,10,50,100)
+rock2 = Player('rocket2.png',650,200,10,50,100)
+defball = GameSprite('ball.png',200,200,10,50,50)
+scaryball = GameSprite('scaryball.png',200,200,10,50,50)
+jungleball = GameSprite('jungleball.png',200,200,10,50,50)
+ball67 = GameSprite('ball67.png',200,200,10,50,50)
+current_bg = background67
+ball = defball
+count1 = 0
+count2 = 0
+FPS = 60
+
+game = True
+finish = False
+while game:
+    for e in event.get():
+        if e.type == QUIT:
+            game = False 
+        elif e.type == KEYDOWN:
+            if e.key == K_SPACE:
+                paused = not paused
+            if paused:
+                if e.key == K_z:
+                    game_mode = 'Z'
+                elif e.key == K_x:
+                    game_mode = 'X'
+            
+            if fill_height >= 500 and e.key == K_q:
+                if game_mode == 'X' and ult_timer1 <= 0:
+                    ult_timer1 = 5 * FPS  
+                fill_height = 0  
+                
+            if fill_height2 >= 500 and e.key == K_p:
+                if game_mode == 'X' and ult_timer2 <= 0:
+                    ult_timer2 = 5 * FPS  
+                fill_height2 = 0  
+                
+    draw.rect(window, (0, 0, 0), (0, 0, 100, 500)) 
+    draw.rect(window, (0, 0, 0), (800, 0, 100, 500))
+    window.blit(current_bg, (100, 0))
+    
+    keys = key.get_pressed()
+    if keys[K_1]: current_bg = futureback
+    if keys[K_2]: current_bg = jungleback; ball = jungleball
+    if keys[K_3]: current_bg = background67; ball = ball67
+    if keys[K_4]: current_bg = scaryback; ball = scaryball
+
+    if not paused:
+        if game_mode == 'Z':
+            if fill_height >= 500:
+                rock1.speed = base_speed_r1 // 3
+            else:
+                rock1.speed = base_speed_r1
+                
+            if fill_height2 >= 500:
+                rock2.speed = base_speed_r2 // 3
+            else:
+                rock2.speed = base_speed_r2
+                
+        else:
+            if ult_timer1 > 0:
+                ult_timer1 -= 1
+                rock2.speed = base_speed_r2 // 3
+            else:
+                rock2.speed = base_speed_r2
+                
+            if ult_timer2 > 0:
+                ult_timer2 -= 1
+                rock1.speed = base_speed_r1 // 3
+            else:
+                rock1.speed = base_speed_r1
+
+        ball.rect.x += speed_w
+        ball.rect.y += speed_h
+        
+        if ball.rect.x >= 750: speed_w *= -1
+        if ball.rect.y >= 450: speed_h *= -1
+        if ball.rect.x <= 100:  speed_w *= -1
+        if ball.rect.y <= 0:   speed_h *= -1
+        
+        if sprite.collide_rect(ball, rock1):
+            if can_collide:
+                speed_w *= -1
+                if fill_height < 500: 
+                    fill_height += 100 
+                can_collide = False
+        else:
+            can_collide = True
+            
+        if sprite.collide_rect(ball, rock2):
+            if can_collide2:
+                speed_w *= -1
+                if fill_height2 < 500:
+                    fill_height2 += 100
+                can_collide2 = False
+        else:
+            can_collide2 = True
+            
+        if ball.rect.x < 150: 
+            count2 += 1
+            if current_bg == futureback: ball = GameSprite('ball.png', 400, 200, 10, 50, 50)
+            if current_bg == jungleback: ball = GameSprite('jungleball.png', 400, 200, 10, 50, 50)
+            if current_bg == background67: ball = GameSprite('ball67.png', 400, 200, 10, 50, 50)
+            if current_bg == scaryback: ball = GameSprite('scaryball.png', 400, 200, 10, 50, 50)
+            
+        if ball.rect.x > 650:
+            count1 += 1
+            if current_bg == futureback: ball = GameSprite('ball.png', 400, 200, 10, 50, 50)
+            if current_bg == jungleback: ball = GameSprite('jungleball.png', 400, 200, 10, 50, 50)
+            if current_bg == background67: ball = GameSprite('ball67.png', 400, 200, 10, 50, 50)
+            if current_bg == scaryback: ball = GameSprite('scaryball.png', 400, 200, 10, 50, 50)
+            
+        if count1 >= 10:
+            win1 = font1.render('Игрок 1 ПОБЕДИЛ!!!', True, (0, 255, 0))
+            window.blit(win1, (100, 150))
+            speed_w, speed_h = 0, 0
+        if count2 >= 10:
+            win2 = font1.render('Игрок 2 ПОБЕДИЛ!!!', True, (0, 255, 0))
+            window.blit(win2, (100, 150))
+            speed_w, speed_h = 0, 0
+
+    if fill_height > 0:
+        draw.rect(window, (255, 0, 0), (0, 500 - fill_height, 100, fill_height))  
+    if fill_height2 > 0:
+        draw.rect(window, (0, 0, 255), (800, 500 - fill_height2, 100, fill_height2))
+        
+    if fill_height >= 500:   
+        text_q = font1.render('Q', True, (255, 255, 255))
+        window.blit(text_q, (35, 220)) 
+    if fill_height2 >= 500:
+        text_p = font1.render('P', True, (255, 255, 255))
+        window.blit(text_p, (835, 220))
+            
+    if paused:
+        mode_text = font1.render('Режим: ' + game_mode, True, (255, 255, 0))
+        window.blit(mode_text, (380, 10))
+
+    rock1.update_r()
+    rock1.reset()
+    rock2.update_l()
+    rock2.reset()
+    ball.reset() 
+    
+    counter = font1.render(str(count1) + ':' + str(count2), True, (255, 255, 255)) 
+    window.blit(counter, (400, 50))    
+        
+    clock.tick(FPS)
+    display.update()
